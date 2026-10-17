@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 import redis 
 import datetime
+from neo4j import GraphDatabase
 from databases import (usuarios,artistas,lugares,eventos,compras)
 
 FECHA_REFERENCIA = "2026-10-01"
@@ -53,5 +54,39 @@ def insert_redis(redis_client):
             valor = f"2"
         redis_client.set(clave,valor, ex = 300)
 
+def insert_neo4j(driver):
+    #Crea los string para inicializarlo con session.run
+    nodo_usuario = """MERGE (u:Usuario {usuario_id:$id, nombre:$nombre, ciudad:$ciudad})"""
+    nodo_artista = """MERGE (a:Artista {artista_id:$id, nombre:$nombre, genero:$genero})"""
+    relacion_amistades = """MATCH (u1:Usuario {usuario_id:$id1})
+                            MATCH (u2:Usuario {usuario_id:$id2})
+                            MERGE (u1)-[:AMIGO_DE]->(u2)"""
+    relacion_seguidos = """MATCH (u:Usuario {usuario_id:$id_user})
+                           MATCH (a:Artista {artista_id:$id_artista})
+                           MERGE (u)-[:SIGUE]->(a)"""
+    relacion_similares = """MATCH (a1:Artista {artista_id:$id1})
+                            MATCH (a2:Artista {artista_id:$id2})
+                            MERGE (a1)-[:SIMILAR_A]->(a2)"""
+    
+    
+    with driver.session() as session:
+        for u in usuarios:
+            session.run(nodo_usuario, id=u["usuario_id"], nombre=u["nombre"], ciudad=u["ciudad"])
+        for a in artistas:
+            session.run(nodo_artista, id=u["artista_id"], nombre=u["nombre"], genero=u["genero"])
+
+        #Itera sobre los usuarios
+        for u in usuarios:
+            #Agarra el id de los amigos del usuario actual
+            for id_amig in u["amigos"]:
+                #Crea la relacion con session.run
+                session.run(relacion_amistades, id1=u["usuario_id"],id2=id_amig)
+            for id_art in u["sigue"]:
+                session.run(relacion_seguidos, id_user=u["usuario_id"],id_artista=id_art)
+        for a in artistas:
+            for id_similar in a["similares"]:
+                session.run(relacion_similares, id1=a["artista_id"], id2=id_similar)
+
+        
             
     
