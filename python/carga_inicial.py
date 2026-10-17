@@ -76,7 +76,7 @@ def insert_neo4j(driver):
         for u in usuarios:
             session.run(nodo_usuario, id=u["usuario_id"], nombre=u["nombre"], ciudad=u["ciudad"])
         for a in artistas:
-            session.run(nodo_artista, id=u["artista_id"], nombre=u["nombre"], genero=u["genero"])
+            session.run(nodo_artista, id=a["artista_id"], nombre=a["nombre"], genero=a["genero"])
 
         #Itera sobre los usuarios
         for u in usuarios:
