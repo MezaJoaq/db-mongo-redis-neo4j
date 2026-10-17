@@ -20,12 +20,13 @@ def insert_mongo(db):
     db.lugares.insert_many(lugares)
     db.eventos.insert_many(eventos)
     db.compras.insert_many(compras)
-
+#Insertar clave/valor en redis
 def insert_redis(redis_client):
     #Carga inicial de las sesiones (como indica en el trabajo)
     usuarios_reserva = [3,6]
     sesiones_activas = [1,2,6]
     busquedas_recientes = ["rock","electrónica","folk","cumbia"]
+
     for sesion in sesiones_activas:
         #Creo la clave de redis
         clave = f"sesion:usuario:{sesion}"
@@ -33,6 +34,7 @@ def insert_redis(redis_client):
         valor = f"{FECHA_REFERENCIA}/{ahora.time()}"
         #Define la sesion del cliente
         redis_client.set(clave, valor, ex= 1800)
+
     for id in usuarios_reserva:
         #Crea la clave de redis
         if(id == 3):
@@ -42,6 +44,7 @@ def insert_redis(redis_client):
             clave = f"reserva:evento:4:usuario:{id}"
             valor = f"3"
         redis_client.set(clave,valor, ex = 600)
+
     for genero in busquedas_recientes:
         clave = f"busqueda:reciente:{genero}"
         if(genero == "rock"):
@@ -53,7 +56,7 @@ def insert_redis(redis_client):
         elif(genero == "cumbia"):
             valor = f"2"
         redis_client.set(clave,valor, ex = 300)
-
+#Insertar relaciones en neo4j
 def insert_neo4j(driver):
     #Crea los string para inicializarlo con session.run
     nodo_usuario = """MERGE (u:Usuario {usuario_id:$id, nombre:$nombre, ciudad:$ciudad})"""
