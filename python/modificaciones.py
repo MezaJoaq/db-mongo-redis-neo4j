@@ -33,5 +33,22 @@ def cancelar_evento7(db,redis_cliente):
     if claves_reserva:
         redis_cliente.delete(*claves_reserva)
 
-def eliminar_usuario6():
+def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
+    db.usuarios.delete_one({"usuario_id" : usuario_id})
+    #Las compras deberian quedar en el sistema porque son informacion necesaria para el negocio
+    db.compras.update_many({"usuario_id" : usuario_id},
+                           {"$set" : {"estado" : "anulado"}})
+    #Elimino al usuario de las otras bases
+    sesiones_eliminada = f"sesion:usuario:{usuario_id}"
+    reserva_eliminada = f"reserva:evento:*:usuario:{usuario_id}"
+    claves_sesion = redis_cliente.keys(sesiones_eliminada)
+    claves_reserva = redis_cliente.keys(reserva_eliminada)
+    redis_cliente.delete(*claves_sesion)
+    redis_cliente.delete(*claves_reserva)
+
+    usuario_neo4j = f"""MATCH (u:Usuario {usuario_id: $usuario_id}) DETACH DELETE u"""
+
+    with driver.session() as session:
+        resultado = session.run(usuario_neo4j, usuario_id = usuario_id)
+        
     
