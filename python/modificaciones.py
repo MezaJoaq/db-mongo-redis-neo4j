@@ -50,5 +50,10 @@ def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
 
     with driver.session() as session:
         resultado = session.run(usuario_neo4j, usuario_id = usuario_id)
-        
+
+def eliminar_amistades(usuario_id,db,driver):
+    usuario_neo4j = f"""MATCH (u:Usuario {usuario_id: $usuario_id})-[r:AMIGO_DE]-()
+                        DELETE r"""
+    with driver.session() as session:
+            resultado = session.run(usuario_neo4j, usuario_id = usuario_id)
     
