@@ -2,7 +2,7 @@ from pymongo import MongoClient
 import redis 
 import datetime
 from neo4j import GraphDatabase
-from databases import (usuarios,artistas,lugares,eventos,compras)
+from notebooks.src.databases import (usuarios,artistas,lugares,eventos,compras)
 
 FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
