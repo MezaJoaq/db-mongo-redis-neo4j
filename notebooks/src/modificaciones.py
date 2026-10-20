@@ -3,6 +3,7 @@ import redis
 import datetime
 from neo4j import GraphDatabase
 from notebooks.src.databases import (usuarios,artistas,lugares,eventos,compras)
+from pprint import pprint
 
 FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
@@ -11,17 +12,27 @@ def aumentar_precio_rosario(db):
     #Busca dinamicamente los ids en rosario
     lugares_rosario = db.lugares.find({"ciudad": "Rosario"})
     id_rosario = [lugar["lugar_id"] for lugar in lugares_rosario]
-
-    db.eventos.update_many({"lugar_id" : id_rosario, 
-                            "fecha": {"gte": FECHA_REFERENCIA}},
+    filtro = {"lugar_id" : {"$in" : id_rosario}, 
+            "fecha": {"$gte": FECHA_REFERENCIA}}
+    db.eventos.update_many(filtro ,
                            {"$mul": {"precio":1.10}  }
                            )
+    eventos_rosario = db.eventos.find(filtro)
+    for evento in eventos_rosario:
+        precio = round(evento["precio"], 2)
+        print(f"• {evento["nombre"]} -> Nuevo precio: {precio}")
+
+    
+
 #2
 def agregar_servicio2(db):
     #Agrega con addToSet para no duplicar en la lista
     db.lugares.update_one({"lugar_id" : 2},
                             {"$addToSet": {"servicios": "accesibilidad"}}
                             )
+    lugar = db.lugares.find_one({"lugar_id" : 2})
+    pprint("Informacion del lugar 2")
+    pprint(lugar)
 #3
 def cancelar_evento7(db,redis_cliente):
     db.eventos.update_one({"evento_id" : 7},
@@ -34,6 +45,11 @@ def cancelar_evento7(db,redis_cliente):
     claves_reserva = redis_cliente.keys(reserva)
     if claves_reserva:
         redis_cliente.delete(*claves_reserva)
+    evento = db.eventos.find_one({"evento_id" : 7})
+    pprint(f"Evento 7:{evento}")
+    compra = list(db.compras.find({"evento_id" : 7}))
+    pprint(f"Compras del evento 7: {compra}")
+
 #4
 def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
     db.usuarios.delete_one({"usuario_id" : usuario_id})
@@ -48,6 +64,10 @@ def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
     redis_cliente.delete(*claves_sesion)
     redis_cliente.delete(*claves_reserva)
 
+    usuario = db.usuarios.find_one({"usuario_id"} : usuario_id )
+    compra_usuario = db.compras.find({"usuario_id"} : usuario_id)
+    pprint(f"Usuario eliminado: {usuario}")
+    pprint(f"Compras del usuario eliminado:{compra_usuario}")
     usuario_neo4j = f"""MATCH (u:Usuario {usuario_id: $usuario_id}) DETACH DELETE u"""
 
     with driver.session() as session:
