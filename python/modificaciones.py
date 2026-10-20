@@ -6,7 +6,7 @@ from databases import (usuarios,artistas,lugares,eventos,compras)
 
 FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
-
+#1
 def aumentar_precio_rosario(db):
     #Busca dinamicamente los ids en rosario
     lugares_rosario = db.lugares.find({"ciudad": "Rosario"})
@@ -16,11 +16,13 @@ def aumentar_precio_rosario(db):
                             "fecha": {"gte": FECHA_REFERENCIA}},
                            {"$mul": {"precio":1.10}  }
                            )
+#2
 def agregar_servicio2(db):
     #Agrega con addToSet para no duplicar en la lista
     db.lugares.update_one({"lugar_id" : 2},
                             {"$addToSet": {"servicios": "accesibilidad"}}
                             )
+#3
 def cancelar_evento7(db,redis_cliente):
     db.eventos.update_one({"evento_id" : 7},
                           {"$set" : {"estado" : "cancelado"}})
@@ -32,7 +34,7 @@ def cancelar_evento7(db,redis_cliente):
     claves_reserva = redis_cliente.keys(reserva)
     if claves_reserva:
         redis_cliente.delete(*claves_reserva)
-
+#4
 def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
     db.usuarios.delete_one({"usuario_id" : usuario_id})
     #Las compras deberian quedar en el sistema porque son informacion necesaria para el negocio
@@ -50,7 +52,7 @@ def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
 
     with driver.session() as session:
         resultado = session.run(usuario_neo4j, usuario_id = usuario_id)
-
+#5
 def eliminar_amistades(usuario_id,db,driver):
     usuario_neo4j = f"""MATCH (u:Usuario {usuario_id: $usuario_id})-[r:AMIGO_DE]-()
                         DELETE r"""

@@ -47,6 +47,8 @@ def insert_redis(redis_client):
 
     for genero in busquedas_recientes:
         clave = f"busqueda:reciente:{genero}"
+        clave_cache = f"cache:busqueda:reciente:{genero}"
+        #Cambiar if por dicc
         if(genero == "rock"):
             valor = f"7"
         elif(genero == "electrónica"):
@@ -55,7 +57,8 @@ def insert_redis(redis_client):
             valor = f"3"
         elif(genero == "cumbia"):
             valor = f"2"
-        redis_client.set(clave,valor, ex = 300)
+        redis_client.set(clave_cache,valor, ex = 300)
+        redis_client.set(clave,valor)
 #Insertar relaciones en neo4j
 def insert_neo4j(driver):
     #Crea los string para inicializarlo con session.run
