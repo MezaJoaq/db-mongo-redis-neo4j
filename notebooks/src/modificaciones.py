@@ -2,8 +2,9 @@ from pymongo import MongoClient
 import redis 
 import datetime
 from neo4j import GraphDatabase
-from notebooks.src.databases import (usuarios,artistas,lugares,eventos,compras)
+from src.databases import (usuarios,artistas,lugares,eventos,compras)
 from pprint import pprint
+    
 
 FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
@@ -20,9 +21,7 @@ def aumentar_precio_rosario(db):
     eventos_rosario = db.eventos.find(filtro)
     for evento in eventos_rosario:
         precio = round(evento["precio"], 2)
-        print(f"• {evento["nombre"]} -> Nuevo precio: {precio}")
-
-    
+        print(f"• {evento['nombre']} -> Nuevo precio: {precio}")
 
 #2
 def agregar_servicio2(db):
@@ -45,10 +44,7 @@ def cancelar_evento7(db,redis_cliente):
     claves_reserva = redis_cliente.keys(reserva)
     if claves_reserva:
         redis_cliente.delete(*claves_reserva)
-    evento = db.eventos.find_one({"evento_id" : 7})
-    pprint(f"Evento 7:{evento}")
-    compra = list(db.compras.find({"evento_id" : 7}))
-    pprint(f"Compras del evento 7: {compra}")
+
 
 #4
 def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
@@ -61,20 +57,22 @@ def eliminar_usuario6(db,redis_cliente,usuario_id,driver):
     reserva_eliminada = f"reserva:evento:*:usuario:{usuario_id}"
     claves_sesion = redis_cliente.keys(sesiones_eliminada)
     claves_reserva = redis_cliente.keys(reserva_eliminada)
-    redis_cliente.delete(*claves_sesion)
-    redis_cliente.delete(*claves_reserva)
+    if(claves_sesion):
+        redis_cliente.delete(*claves_sesion)
+        print("Se elimino la sesion correctamente")
+    else: print("El usuario no tiene una sesion activa")
+    if(claves_reserva):
+        redis_cliente.delete(*claves_reserva)
+        print("Se elimino la reserva correctamente")
+    else: print("El usuario no tiene una reserva activa")
 
-    usuario = db.usuarios.find_one({"usuario_id"} : usuario_id )
-    compra_usuario = db.compras.find({"usuario_id"} : usuario_id)
-    pprint(f"Usuario eliminado: {usuario}")
-    pprint(f"Compras del usuario eliminado:{compra_usuario}")
-    usuario_neo4j = f"""MATCH (u:Usuario {usuario_id: $usuario_id}) DETACH DELETE u"""
+    usuario_neo4j = """MATCH (u:Usuario {usuario_id: $usuario_id}) DETACH DELETE u"""
 
     with driver.session() as session:
         resultado = session.run(usuario_neo4j, usuario_id = usuario_id)
 #5
 def eliminar_amistades(usuario_id,db,driver):
-    usuario_neo4j = f"""MATCH (u:Usuario {usuario_id: $usuario_id})-[r:AMIGO_DE]-()
+    usuario_neo4j = """MATCH (u:Usuario {usuario_id: $usuario_id})-[r:AMIGO_DE]-()
                         DELETE r"""
     with driver.session() as session:
             resultado = session.run(usuario_neo4j, usuario_id = usuario_id)
