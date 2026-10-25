@@ -11,7 +11,6 @@ FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
 #Insertar colecciones en mongodb
 def insert_mongo(db):
-    #Limpia las colecciones por si se vuelve a ejecutar la funcion
     colecciones = {
         "usuarios" : usuarios,
         "artistas" : artistas,
@@ -69,7 +68,7 @@ def insert_redis(redis_client):
         print(f"Error en Redis: {e}") 
         return False
 #Insertar relaciones en neo4j
-def insert_neo4j(driver):
+def insert_neo4j(driver,db):
     #Crea los string para inicializarlo con session.run
     limpieza = """MATCH (n) DETACH DELETE n"""
     nodo_usuario = """MERGE (u:Usuario {usuario_id:$id, nombre:$nombre, ciudad:$ciudad})"""
@@ -83,7 +82,13 @@ def insert_neo4j(driver):
     relacion_similares = """MATCH (a1:Artista {artista_id:$id1})
                             MATCH (a2:Artista {artista_id:$id2})
                             MERGE (a1)-[:SIMILAR_A]->(a2)"""
-    
+    #Elimino datos duplicados en mongo
+    db.usuarios.update_many({},
+                            {"$unset" : {"amigos" : ""}})
+    db.usuarios.update_many({},
+                            {"$unset" : {"sigue" : ""}})
+    db.artistas.update_many({},
+                            {"$unset" : {"similares" : ""}})
     try:
         with driver.session() as session:
             session.run(limpieza)
