@@ -57,11 +57,8 @@ def insert_redis(redis_client):
         for clave_reserva, valor_reserva in reserva.items():
             redis_client.set(clave_reserva, valor_reserva, ex=600)
 
-        for genero, cant in busquedas_recientes.items():
-            clave = f"busqueda:reciente:{genero}"
-            clave_cache = f"cache:busqueda:reciente:{genero}"
-            redis_client.set(clave_cache,cant, ex = 300)
-            redis_client.set(clave,cant)
+        redis_client.zadd("busqueda:reciente", busquedas_recientes)
+        redis_client.expire("busqueda:reciente", 300)
         print("Redis cargado con éxito.")
         return True
     except RedisError as e:
