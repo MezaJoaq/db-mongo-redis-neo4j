@@ -20,4 +20,4 @@ def reservas_vigentes(redis_client,id):
         if datos_reserva:
             total_reserva += int(datos_reserva)
             
-        return total_reserva
+    return total_reserva

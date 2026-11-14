@@ -33,7 +33,7 @@ def insert_mongo(db):
     return True
 
 #Insertar clave/valor en redis
-def insert_redis(redis_client):
+def insert_redis(redis_client,db):
     #Carga inicial de las sesiones (como indica en el trabajo)
     reserva = {
             "reserva:evento:5:usuario:3" : 2,
@@ -44,6 +44,7 @@ def insert_redis(redis_client):
                            "electrónica" : 5,
                            "folk" : 3,
                            "cumbia" : 2}
+    
     redis_client.flushdb()
     try: 
         for sesion in sesiones_activas:
@@ -58,7 +59,12 @@ def insert_redis(redis_client):
             redis_client.set(clave_reserva, valor_reserva, ex=600)
 
         redis_client.zadd("busqueda:reciente", busquedas_recientes)
-        redis_client.expire("busqueda:reciente", 300)
+        
+        for genero in busquedas_recientes.keys():
+            evento = list(db.eventos.find({"genero" : genero, "estado": "activo"},
+                                            {"_id" : 0}))
+            if evento:
+                redis_client.set(f"cache:busqueda:reciente:{genero}", json.dumps(evento), ex= 300)
         print("Redis cargado con éxito.")
         return True
     except RedisError as e:
