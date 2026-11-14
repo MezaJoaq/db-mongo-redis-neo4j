@@ -6,6 +6,7 @@ from src.databases import (usuarios,artistas,lugares,eventos,compras)
 from pymongo.errors import PyMongoError
 from redis.exceptions import RedisError
 from neo4j.exceptions import Neo4jError
+import json
 
 FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
@@ -59,7 +60,7 @@ def insert_redis(redis_client,db):
             redis_client.set(clave_reserva, valor_reserva, ex=600)
 
         redis_client.zadd("busqueda:reciente", busquedas_recientes)
-        
+
         for genero in busquedas_recientes.keys():
             evento = list(db.eventos.find({"genero" : genero, "estado": "activo"},
                                             {"_id" : 0}))
