@@ -6,7 +6,6 @@ from src.databases import (usuarios,artistas,lugares,eventos,compras)
 from pymongo.errors import PyMongoError
 from redis.exceptions import RedisError
 from neo4j.exceptions import Neo4jError
-import json
 
 FECHA_REFERENCIA = "2026-10-01"
 ahora = datetime.datetime.now()
@@ -22,7 +21,7 @@ def insert_mongo(db):
     print("Cargando datos en MongoDB")
     for nombre_col, lista_datos in colecciones.items():
         col = db[nombre_col]
-        col.delete_many({})
+        col.delete_many({}) 
 
         try:
             res = col.insert_many(lista_datos)
@@ -34,7 +33,7 @@ def insert_mongo(db):
     return True
 
 #Insertar clave/valor en redis
-def insert_redis(redis_client,db):
+def insert_redis(redis_client):
     #Carga inicial de las sesiones (como indica en el trabajo)
     reserva = {
             "reserva:evento:5:usuario:3" : 2,
@@ -45,27 +44,21 @@ def insert_redis(redis_client,db):
                            "electrónica" : 5,
                            "folk" : 3,
                            "cumbia" : 2}
-    
     redis_client.flushdb()
     try: 
         for sesion in sesiones_activas:
             #Creo la clave de redis
-            clave = f"sesion:usuario:{sesion}"
+            clave = f"sesion:usuario:{sesion}" 
             #Valor de la fecha de refencia mas la hora de sesion
             valor = f"{FECHA_REFERENCIA}/{ahora.time()}"
             #Define la sesion del cliente
             redis_client.set(clave, valor, ex=1800)
 
-        for clave_reserva, valor_reserva in reserva.items():
+        for clave_reserva, valor_reserva in reserva.items(): 
             redis_client.set(clave_reserva, valor_reserva, ex=600)
 
-        redis_client.zadd("busqueda:reciente", busquedas_recientes)
-
-        for genero in busquedas_recientes.keys():
-            evento = list(db.eventos.find({"genero" : genero, "estado": "activo"},
-                                            {"_id" : 0}))
-            if evento:
-                redis_client.set(f"cache:busqueda:reciente:{genero}", json.dumps(evento), ex= 300)
+        redis_client.zadd("busqueda:reciente", busquedas_recientes) 
+        redis_client.expire("busqueda:reciente", 300) 
         print("Redis cargado con éxito.")
         return True
     except RedisError as e:
@@ -75,8 +68,8 @@ def insert_redis(redis_client,db):
 def insert_neo4j(driver,db):
     #Crea los string para inicializarlo con session.run
     limpieza = """MATCH (n) DETACH DELETE n"""
-    nodo_usuario = """MERGE (u:Usuario {usuario_id:$id, nombre:$nombre, ciudad:$ciudad})"""
-    nodo_artista = """MERGE (a:Artista {artista_id:$id, nombre:$nombre, genero:$genero})"""
+    nodo_usuario = """MERGE (u:Usuario {usuario_id: $id}) ON CREATE SET u.nombre = $nombre, u.ciudad = $ciudad"""
+    nodo_artista = """MERGE (a:Artista {artista_id: $id})ON CREATE SET a.nombre = $nombre, a.genero = $genero"""
     relacion_amistades = """MATCH (u1:Usuario {usuario_id:$id1})
                             MATCH (u2:Usuario {usuario_id:$id2})
                             MERGE (u1)-[:AMIGO_DE]->(u2)"""
@@ -117,7 +110,3 @@ def insert_neo4j(driver,db):
     except Neo4jError as e: 
         print(f"Error de ejecución en Neo4j: {e}") 
         return False
-
-        
-            
-    
